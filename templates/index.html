@@ -1,0 +1,37 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>GitHub Activity</title>
+</head>
+<body>
+    <h2>Latest GitHub Activity</h2>
+    <div id="events"></div>
+
+<script>
+async function fetchEvents() {
+    const response = await fetch("/events");
+    const data = await response.json();
+
+    let html = "";
+
+    data.forEach(event => {
+        if(event.action === "PUSH") {
+            html += `<p>${event.author} pushed to ${event.to_branch} on ${event.timestamp}</p>`;
+        }
+        else if(event.action === "PULL_REQUEST") {
+            html += `<p>${event.author} submitted a pull request from ${event.from_branch} to ${event.to_branch} on ${event.timestamp}</p>`;
+        }
+        else if(event.action === "MERGE") {
+            html += `<p>${event.author} merged branch ${event.from_branch} to ${event.to_branch} on ${event.timestamp}</p>`;
+        }
+    });
+
+    document.getElementById("events").innerHTML = html;
+}
+
+fetchEvents();
+setInterval(fetchEvents, 15000);
+</script>
+
+</body>
+</html>
