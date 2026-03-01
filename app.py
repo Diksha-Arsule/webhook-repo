@@ -6,7 +6,7 @@ import os
 app = Flask(__name__)
 
 # MongoDB connection
-client = MongoClient("mongodb+srv://Project2:8hRBmkm4AjDeZldv@cluster1.u2jzahm.mongodb.net/?appName=Cluster1")
+client = MongoClient(os.environ.get("mongodb+srv://Project2:8hRBmkm4AjDeZldv@cluster1.u2jzahm.mongodb.net/?appName=Cluster1"))
 db = client.github_events
 collection = db.events
 
