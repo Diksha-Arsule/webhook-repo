@@ -9,12 +9,19 @@ app = Flask(__name__)
 # MongoDB Connection (Safe Setup)
 # -------------------------------
 
+# mongo_uri = os.environ.get("mongodb+srv://Project2:8hRBmkm4AjDeZldv@cluster1.u2jzahm.mongodb.net/?appName=Cluster1")
+# client = MongoClient(mongo_uri)
+# db = client.github_events
+# collection = db.events
+
 mongo_uri = os.environ.get("mongodb+srv://Project2:8hRBmkm4AjDeZldv@cluster1.u2jzahm.mongodb.net/?appName=Cluster1")
 
-if not mongo_uri:
-    raise Exception("MONGO_URI environment variable not set")
+if mongo_uri:
+    client = MongoClient(mongo_uri)
+else:
+    print("WARNING: MONGO_URI not found, using fallback (for debug)")
+    client = MongoClient("mongodb://localhost:27017/")
 
-client = MongoClient(mongo_uri)
 db = client.github_events
 collection = db.events
 
