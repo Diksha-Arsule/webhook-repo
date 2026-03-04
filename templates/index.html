@@ -2,34 +2,201 @@
 <html>
 <head>
     <title>GitHub Activity</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            padding: 20px;
+        }
+        
+        .container {
+            max-width: 900px;
+            margin: 0 auto;
+            background: white;
+            border-radius: 10px;
+            box-shadow: 0 10px 40px rgba(0, 0, 0, 0.2);
+            padding: 40px;
+        }
+        
+        header {
+            text-align: center;
+            margin-bottom: 30px;
+            border-bottom: 2px solid #667eea;
+            padding-bottom: 20px;
+        }
+        
+        h1 {
+            color: #333;
+            font-size: 2em;
+            margin-bottom: 5px;
+        }
+        
+        .status {
+            color: #666;
+            font-size: 0.9em;
+        }
+        
+        .status.loading {
+            color: #ff9800;
+        }
+        
+        .status.error {
+            color: #f44336;
+        }
+        
+        .status.success {
+            color: #4caf50;
+        }
+        
+        #events {
+            min-height: 200px;
+        }
+        
+        .event {
+            padding: 15px;
+            margin-bottom: 12px;
+            background: #f5f5f5;
+            border-left: 4px solid #667eea;
+            border-radius: 5px;
+            transition: transform 0.2s, box-shadow 0.2s;
+        }
+        
+        .event:hover {
+            transform: translateX(5px);
+            box-shadow: 0 4px 12px rgba(102, 126, 234, 0.2);
+        }
+        
+        .event.push {
+            border-left-color: #4caf50;
+        }
+        
+        .event.pull_request {
+            border-left-color: #2196f3;
+        }
+        
+        .event.merge {
+            border-left-color: #ff9800;
+        }
+        
+        .event-type {
+            display: inline-block;
+            padding: 5px 10px;
+            border-radius: 20px;
+            font-size: 0.8em;
+            font-weight: bold;
+            margin-bottom: 8px;
+        }
+        
+        .push { background: #e8f5e9; color: #2e7d32; }
+        .pull_request { background: #e3f2fd; color: #1565c0; }
+        .merge { background: #fff3e0; color: #e65100; }
+        
+        .event-text {
+            color: #333;
+            font-size: 1em;
+            margin-bottom: 5px;
+        }
+        
+        .event-time {
+            color: #999;
+            font-size: 0.85em;
+        }
+        
+        .empty {
+            text-align: center;
+            padding: 40px;
+            color: #999;
+        }
+        
+        .error-message {
+            background: #ffebee;
+            color: #c62828;
+            padding: 15px;
+            border-radius: 5px;
+            margin-bottom: 20px;
+            display: none;
+        }
+    </style>
 </head>
 <body>
-    <h2>Latest GitHub Activity</h2>
-    <div id="events"></div>
+    <div class="container">
+        <header>
+            <h1>🚀 GitHub Activity Monitor</h1>
+            <p class="status loading" id="status">Loading events...</p>
+        </header>
+        
+        <div class="error-message" id="error-message"></div>
+        <div id="events"></div>
+    </div>
 
 <script>
 async function fetchEvents() {
-    const response = await fetch("/events");
-    const data = await response.json();
-
-    let html = "";
-
-    data.forEach(event => {
-        if(event.action === "PUSH") {
-            html += `<p>${event.author} pushed to ${event.to_branch} on ${event.timestamp}</p>`;
+    try {
+        const statusEl = document.getElementById("status");
+        const eventsEl = document.getElementById("events");
+        
+        const response = await fetch("/events");
+        
+        if (!response.ok) {
+            throw new Error(`Server error: ${response.status}`);
         }
-        else if(event.action === "PULL_REQUEST") {
-            html += `<p>${event.author} submitted a pull request from ${event.from_branch} to ${event.to_branch} on ${event.timestamp}</p>`;
+        
+        const data = await response.json();
+        
+        if (!data || data.length === 0) {
+            eventsEl.innerHTML = '<div class="empty">No events yet. Push a commit or create a pull request to get started!</div>';
+            statusEl.innerHTML = '✓ Ready';
+            statusEl.className = 'status success';
+            return;
         }
-        else if(event.action === "MERGE") {
-            html += `<p>${event.author} merged branch ${event.from_branch} to ${event.to_branch} on ${event.timestamp}</p>`;
-        }
-    });
 
-    document.getElementById("events").innerHTML = html;
+        let html = "";
+        data.forEach(event => {
+            const eventTypeClass = event.action.toLowerCase().replace("_", "_");
+            const eventType = event.action === "PULL_REQUEST" ? "PR" : event.action;
+            
+            let text = "";
+            if (event.action === "PUSH") {
+                text = `<strong>${event.author}</strong> pushed to <strong>${event.to_branch}</strong>`;
+            } else if (event.action === "PULL_REQUEST") {
+                text = `<strong>${event.author}</strong> submitted a PR from <strong>${event.from_branch}</strong> to <strong>${event.to_branch}</strong>`;
+            } else if (event.action === "MERGE") {
+                text = `<strong>${event.author}</strong> merged <strong>${event.from_branch}</strong> into <strong>${event.to_branch}</strong>`;
+            }
+            
+            html += `
+                <div class="event">
+                    <span class="event-type ${eventTypeClass}">${eventType}</span>
+                    <div class="event-text">${text}</div>
+                    <div class="event-time">📅 ${event.timestamp}</div>
+                </div>
+            `;
+        });
+
+        eventsEl.innerHTML = html;
+        statusEl.innerHTML = `✓ ${data.length} event${data.length !== 1 ? 's' : ''} loaded`;
+        statusEl.className = 'status success';
+        
+    } catch (error) {
+        console.error("Error fetching events:", error);
+        document.getElementById("error-message").textContent = `Error: ${error.message}`;
+        document.getElementById("error-message").style.display = "block";
+        document.getElementById("status").innerHTML = "✗ Error loading events";
+        document.getElementById("status").className = "status error";
+    }
 }
 
+// Initial load
 fetchEvents();
+
+// Refresh every 15 seconds
 setInterval(fetchEvents, 15000);
 </script>
 
